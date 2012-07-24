@@ -1,0 +1,175 @@
+diff -u mpdc/album.c mpdc.new/album.c
+--- mpdc/album.c	2006-05-27 22:10:10.000000000 -0400
++++ mpdc.new/album.c	2006-05-10 23:56:40.000000000 -0400
+@@ -79,8 +79,9 @@
+ 	if (button == TTK_BUTTON_ACTION) {
+ 		item = ttk_menu_get_selected_item(this);
+ 		if (((char *)item->data)[0]) {
+-			ttk_menu_flash(item, 1);
+-			queue_album(item);
++//			ttk_menu_flash(item, 1);
++//			queue_album(item);
++			local_transfer_alt_menu(current_song.artist, item->data, NULL, queue_album, item);
+ 		}
+ 	}
+ 	return 0;
+@@ -143,7 +144,7 @@
+ 	PzWindow *ret;
+ 	clear_current_song();
+ 	ret = pz_new_window(_("Albums"), PZ_WINDOW_NORMAL);
++	ret->data = 0x12345678;
+ 	ttk_add_widget(ret, populate_albums(""));
+ 	return pz_finish_window(ret);
+ }
+-
+Only in mpdc.new/: album.o
+diff -u mpdc/artist.c mpdc.new/artist.c
+--- mpdc/artist.c	2006-05-27 22:10:10.000000000 -0400
++++ mpdc.new/artist.c	2006-05-11 00:47:20.000000000 -0400
+@@ -58,8 +58,9 @@
+ 	if (button == TTK_BUTTON_ACTION) {
+ 		item = ttk_menu_get_selected_item(this);
+ 		if (((char *)item->data)[0]) {
+-			ttk_menu_flash(item, 1);
+-			queue_artist(item);
++//			ttk_menu_flash(item, 1);
++//			queue_artist(item);
++			local_transfer_alt_menu(item->data, NULL, NULL, queue_artist, item);
+ 		}
+ 	}
+ 	return 0;
+@@ -125,7 +126,7 @@
+ 	PzWindow *ret;
+ 	clear_current_song();
+ 	ret = pz_new_window(_("Artists"), PZ_WINDOW_NORMAL);
++	ret->data = 0x12345678;
+ 	ttk_add_widget(ret, populate_artists(""));
+ 	return pz_finish_window(ret);
+ }
+-
+Only in mpdc.new/: artist.o
+diff -u mpdc/genre.c mpdc.new/genre.c
+--- mpdc/genre.c	2006-05-27 22:10:10.000000000 -0400
++++ mpdc.new/genre.c	2006-05-10 22:03:28.000000000 -0400
+@@ -31,6 +31,7 @@
+ {
+ 	PzWindow *ret;
+ 	ret = pz_new_window(_("Genres"), PZ_WINDOW_NORMAL);
++	ret->data = 0x12345678;
+ 	ttk_add_widget(ret, populate_genres());
+ 	return pz_finish_window(ret);
+ }
+Only in mpdc.new/: genre.o
+Only in mpdc.new/: libmpdclient.o
+diff -u mpdc/menu.c mpdc.new/menu.c
+--- mpdc/menu.c	2006-05-27 22:10:10.000000000 -0400
++++ mpdc.new/menu.c	2006-05-10 22:57:29.000000000 -0400
+@@ -26,6 +26,11 @@
+ 
+ mpd_Song current_song;
+ 
++//char *current_song_get_artist() { return current_song.artist; }
++//char *current_song_get_album() { return current_song.album; }
++
++
++
+ void clear_current_song()
+ {
+ 	current_song.artist = NULL;
+@@ -123,4 +128,3 @@
+ 		head[set] = listsort(head[set], cmp);
+ 	}
+ }
+-
+Only in mpdc.new/: menu.o
+diff -u mpdc/Module mpdc.new/Module
+--- mpdc/Module	2006-05-27 22:10:10.000000000 -0400
++++ mpdc.new/Module	2006-05-10 23:15:17.000000000 -0400
+@@ -5,4 +5,5 @@
+ Author: Courtney Cavin
+ Provides: music
+ Contact: courtc@ipodlinux.org
++Dependencies: podtopod
+ Soft-Dependencies: tiwidgets, mpd
+diff -u mpdc/mpdc.c mpdc.new/mpdc.c
+--- mpdc/mpdc.c	2006-05-27 22:10:10.000000000 -0400
++++ mpdc.new/mpdc.c	2006-05-27 22:13:14.000000000 -0400
+@@ -99,6 +99,14 @@
+ 	mpd_finishCommand(mpdz);
+ }
+ 
++void mpdc_update()
++{
++        if (mpdc_tickle() < 0)
++                return;
++        mpd_sendUpdateCommand(mpdz, "");
++        mpd_finishCommand(mpdz);
++}
++
+ mpd_Connection *mpd_init_connection()
+ {
+ 	static mpd_Connection con_fd;
+@@ -166,6 +174,9 @@
+ 		return 1;
+ 	}
+ 
++	if (mpd_is_dirty())
++	   mpdc_update();
++
+ 	return (mpdz == NULL) ? -1 : err;
+ }
+ 
+diff -u mpdc/mpdc.h mpdc.new/mpdc.h
+--- mpdc/mpdc.h	2006-05-27 22:10:10.000000000 -0400
++++ mpdc.new/mpdc.h	2006-05-06 22:38:21.000000000 -0400
+@@ -12,6 +12,7 @@
+ void mpdc_next();
+ void mpdc_prev();
+ void mpdc_playpause();
++void mpdc_update();
+ void mpd_destroy_connection(mpd_Connection *con_fd, char *err);
+ mpd_Connection *mpd_init_connection(void);
+ int mpdc_status(mpd_Connection *con_fs);
+Only in mpdc.new/: mpdc.o
+Only in mpdc.new/: mpdc.so
+Only in mpdc.new/: playing.o
+diff -u mpdc/playlist.c mpdc.new/playlist.c
+--- mpdc/playlist.c	2006-05-27 22:10:10.000000000 -0400
++++ mpdc.new/playlist.c	2006-05-10 22:03:51.000000000 -0400
+@@ -76,6 +76,7 @@
+ {
+ 	PzWindow *ret;
+ 	ret = pz_new_window(_("Playlists"), PZ_WINDOW_NORMAL);
++	ret->data = 0x12345678;
+ 	ttk_add_widget(ret, populate_playlists());
+ 	return pz_finish_window(ret);
+ }
+Only in mpdc.new/: playlist.o
+Only in mpdc.new/: queue.o
+diff -u mpdc/song.c mpdc.new/song.c
+--- mpdc/song.c	2006-05-27 22:10:10.000000000 -0400
++++ mpdc.new/song.c	2006-05-10 23:59:30.000000000 -0400
+@@ -68,8 +68,9 @@
+ 	ttk_menu_item *item;
+ 	if (button == TTK_BUTTON_ACTION) {
+ 		item = ttk_menu_get_selected_item(this);
+-		ttk_menu_flash(item, 1);
+-		queue_song(item);
++//		ttk_menu_flash(item, 1);
++//		queue_song(item);
++		local_transfer_alt_menu(current_song.artist, current_song.album, item->name, queue_song, item);
+ 	}
+ 	return 0;
+ }
+@@ -188,8 +189,7 @@
+ 	PzWindow *ret;
+ 	clear_current_song();
+ 	ret = pz_new_window(_("Songs"), PZ_WINDOW_NORMAL);
++	ret->data = 0x12345678;
+ 	ttk_add_widget(ret, populate_songs(NULL));
+ 	return pz_finish_window(ret);
+ }
+-
+-
+Only in mpdc.new/: song.o
+Common subdirectories: mpdc/.svn and mpdc.new/.svn
